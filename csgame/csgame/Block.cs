@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using Microsoft.Xna.Framework;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,12 +10,40 @@ namespace csgame
     class Block
     {
 
-        private Vector3 position;
-        private Vector3 size;
+        public Vector3 position { get; private set; }
+        public Vector3 size { get; private set; }
 
-        public Block(Vector3 pos, Vector3 scale) {
+        public string tex { get; private set; }
+
+        public float cLX { get; private set; }
+        public float cHX { get; private set; }
+        public float cLY { get; private set; }
+        public float cHY { get; private set; }
+
+        public Block(Vector3 pos, Vector3 scale, string tex) {
             position = pos;
             size = scale;
+            this.tex = tex;
+            switch (tex) {
+                case "grass":
+                    cLX = 0.0f;
+                    cLY = 0.0f;
+                    cHX = 0.1f;
+                    cHY = 0.1f;
+                    break;
+                case "stone":
+                    cLX = 0.1f;
+                    cLY = 0.0f;
+                    cHX = 0.2f;
+                    cHY = 0.1f;
+                    break;
+                case "idk":
+                    cLX = 0.2f;
+                    cLY = 0.0f;
+                    cHX = 0.3f;
+                    cHY = 0.1f;
+                    break;
+            }
         }
 
     }

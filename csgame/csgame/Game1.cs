@@ -2,6 +2,9 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace csgame;
 
@@ -14,10 +17,16 @@ public class Game1: Game {
 
     World world = new World();
 
+    bool bruh = false;
+    int callbacks = 0;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int MessageBox(IntPtr hWnd, string lpText, string lpCaption, uint uType);
+
     public Game1() {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
-        IsMouseVisible = true;
+        IsMouseVisible = false;
         TargetElapsedTime = TimeSpan.FromSeconds(1.0 / 360.0);
         IsFixedTimeStep = true;
 
@@ -33,6 +42,8 @@ public class Game1: Game {
     protected override void Initialize() {
         base.Initialize();
         ResourceManager.GraphicsDevice = GraphicsDevice;
+
+        RawMouseInputReader.SetCallback(MouseMove);
     }
 
     protected override void LoadContent() {
@@ -55,20 +66,19 @@ public class Game1: Game {
         Point screenCenter = new Point(ResourceManager.GraphicsDevice.Viewport.Width / 2, ResourceManager.GraphicsDevice.Viewport.Height / 2);
 
         float moveSpeed = 50f;
-        float mouseSensitivity = 0.003f;
 
         // Get the current mouse state
         var mouseState = Mouse.GetState();
+
+        if(mouseState.LeftButton == ButtonState.Pressed) {
+            Debug.WriteLine(callbacks);
+        }
 
         // Calculate the difference between the current mouse position and the center of the screen
         int deltaX = mouseState.X - screenCenter.X;
         int deltaY = mouseState.Y - screenCenter.Y;
 
         Mouse.SetPosition(screenCenter.X, screenCenter.Y);
-
-        // Update yaw and pitch based on mouse movement
-        world.cameraR -= deltaX * mouseSensitivity;
-        world.cameraT -= deltaY * mouseSensitivity;
 
         // Clamp the pitch to prevent flipping
         world.cameraT = MathHelper.Clamp(world.cameraT, -MathHelper.PiOver2, MathHelper.PiOver2);
@@ -107,9 +117,21 @@ public class Game1: Game {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // TODO: Add your drawing code here
+        if (!bruh) {
+            bruh = true;
+            RawMouseInputReader.Initialize(RawMouseInputReader.GetActiveWindow());
+        }
 
         world.render();
 
         base.Draw(gameTime);
     }
+
+    private void MouseMove(int deltaX, int deltaY) {
+        // Update yaw and pitch based on mouse movement
+        callbacks++;
+        world.cameraR -= deltaX * 0.0005f;
+        world.cameraT -= deltaY * 0.0005f;
+    }
+
 }

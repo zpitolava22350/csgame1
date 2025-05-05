@@ -18,6 +18,7 @@ public class Game1: Game {
     World world = new World();
 
     bool bruh = false;
+    bool click = false;
     int callbacks = 0;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
@@ -70,8 +71,15 @@ public class Game1: Game {
         // Get the current mouse state
         var mouseState = Mouse.GetState();
 
-        if(mouseState.LeftButton == ButtonState.Pressed) {
+        if (mouseState.LeftButton == ButtonState.Pressed && !click) {
             Debug.WriteLine(callbacks);
+            bool buh = world.Raycast();
+            Debug.WriteLine(buh);
+            if(buh)
+                world.cameraPosition = world.lastRay;
+            click = true;
+        } else if(mouseState.LeftButton == ButtonState.Released && click) {
+            click = false;
         }
 
         // Calculate the difference between the current mouse position and the center of the screen

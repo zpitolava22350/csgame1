@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
+using System.Net.WebSockets;
 
 namespace csgame {
 
@@ -35,6 +36,8 @@ namespace csgame {
     class World {
 
         private List<Block> blocks = new List<Block>();
+
+        public Vector3 lastRay;
 
         VertexCustom[] vertices;
         int[] indices;
@@ -190,6 +193,87 @@ namespace csgame {
             sw.Stop();
             Debug.WriteLine($"{sw.ElapsedMilliseconds}ms > GenerateMap()");
         }
+
+        public bool Raycast() {
+            return Raycast(cameraPosition, cameraR, cameraT);
+        }
+
+        public bool Raycast(Vector3 O, float R, float T) {
+            Vector3 D = new Vector3(
+                (float)(Math.Cos(T) * Math.Sin(R)),
+                (float)(Math.Sin(T)),
+                (float)(Math.Cos(T) * Math.Cos(R))
+            );
+            D.Normalize();
+            return Raycast(O, D);
+        }
+
+        public bool Raycast(Vector3 O, Vector3 D) {
+            float closest = float.MaxValue;
+            for (int i = 0; i < indices.Length; i += 6) {
+
+                // Triangle 1
+                float? r1 = RayIntersectsTriangle(O, D,
+                    vertices[indices[i]].Position,
+                    vertices[indices[i + 1]].Position,
+                    vertices[indices[i + 2]].Position,
+                    out Vector3 hit1);
+                if (r1 != null) {
+                    if (r1 < closest) {
+                        lastRay = hit1;
+                        closest = (float)r1;
+                    }
+                    return true;
+                }
+
+                // Triangle 2
+                float? r2 = RayIntersectsTriangle(O, D,
+                    vertices[indices[i + 3]].Position,
+                    vertices[indices[i + 4]].Position,
+                    vertices[indices[i + 5]].Position,
+                    out Vector3 hit2);
+                if (r2 != null) {
+                    if(r2 < closest) {
+                        lastRay = hit2;
+                        closest = (float)r2;
+                    }
+                }
+            }
+
+            if(closest < float.MaxValue) {
+                return true;
+            }
+            return false;
+        }
+
+        private float? RayIntersectsTriangle(Vector3 O, Vector3 D, Vector3 v0, Vector3 v1, Vector3 v2, out Vector3 hitPoint) {
+            hitPoint = Vector3.Zero;
+
+            Vector3 edge1 = v1 - v0;
+            Vector3 edge2 = v2 - v0;
+            Vector3 h = Vector3.Cross(D, edge2);
+            float a = Vector3.Dot(edge1, h);
+
+            if (Math.Abs(a) < 0.000001f) return null;
+
+            float f = 1f / a;
+            Vector3 s = O - v0;
+            float u = f * Vector3.Dot(s, h);
+            if (u < 0 || u > 1) return null;
+
+            Vector3 q = Vector3.Cross(s, edge1);
+            float v = f * Vector3.Dot(D, q);
+            if (v < 0 || u + v > 1) return null;
+
+            float t = f * Vector3.Dot(edge2, q);
+            if (t < 0) {
+                hitPoint = O + t * D;
+                return -t;
+            }
+
+            return null;
+        }
+
 
         public void render() {
 

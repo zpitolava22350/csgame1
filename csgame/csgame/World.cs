@@ -210,6 +210,8 @@ namespace csgame {
 
         public bool Raycast(Vector3 O, Vector3 D) {
             float closest = float.MaxValue;
+            D.X = -D.X;
+            D.Z = -D.Z;
             for (int i = 0; i < indices.Length; i += 6) {
 
                 // Triangle 1
@@ -223,7 +225,6 @@ namespace csgame {
                         lastRay = hit1;
                         closest = (float)r1;
                     }
-                    return true;
                 }
 
                 // Triangle 2
@@ -266,9 +267,9 @@ namespace csgame {
             if (v < 0 || u + v > 1) return null;
 
             float t = f * Vector3.Dot(edge2, q);
-            if (t < 0) {
+            if (t > 0.000001f) {
                 hitPoint = O + t * D;
-                return -t;
+                return t;
             }
 
             return null;

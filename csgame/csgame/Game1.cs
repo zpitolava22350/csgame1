@@ -14,12 +14,12 @@ public class Game1: Game {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
     private SpriteFont font;
+    private Texture2D pixel;
 
     World world = new World();
 
     bool bruh = false;
     bool click = false;
-    int callbacks = 0;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int MessageBox(IntPtr hWnd, string lpText, string lpCaption, uint uType);
@@ -52,6 +52,9 @@ public class Game1: Game {
         font = Content.Load<SpriteFont>("BruhFont");
         world.lighting = Content.Load<Effect>("Lighting");
 
+        pixel = new Texture2D(GraphicsDevice, 1, 1);
+        pixel.SetData(new[] { Color.White });
+
         world.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(1.57f, GraphicsDevice.Viewport.AspectRatio, 0.1f, 1000f);
         world.texture = Content.Load<Texture2D>("texsheet");
         world.texture.GraphicsDevice.SamplerStates[0] = new SamplerState { Filter = TextureFilter.Point, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap };
@@ -72,11 +75,9 @@ public class Game1: Game {
         var mouseState = Mouse.GetState();
 
         if (mouseState.LeftButton == ButtonState.Pressed && !click) {
-            Debug.WriteLine(callbacks);
             bool buh = world.Raycast();
-            Debug.WriteLine(buh);
             if(buh)
-                world.cameraPosition = world.lastRay;
+                world.cameraPosition = Vector3.Lerp(world.cameraPosition, world.lastRay, 0.05f);
             click = true;
         } else if(mouseState.LeftButton == ButtonState.Released && click) {
             click = false;
@@ -132,12 +133,24 @@ public class Game1: Game {
 
         world.render();
 
+        // HUD
+        _spriteBatch.Begin();
+
+        // FPS
+        _spriteBatch.DrawString(font, "FPS: " + (1 / (float)gameTime.ElapsedGameTime.TotalSeconds).ToString("0.0"), new Vector2(10, 10), Color.White);
+
+        // Crosshair
+        Point screenCenter = new Point(ResourceManager.GraphicsDevice.Viewport.Width / 2, ResourceManager.GraphicsDevice.Viewport.Height / 2);
+        _spriteBatch.Draw(pixel, new Rectangle(screenCenter.X - 10, screenCenter.Y - 1, 20, 2), Color.White);
+        _spriteBatch.Draw(pixel, new Rectangle(screenCenter.X - 1, screenCenter.Y - 10, 2, 20), Color.White);
+
+        _spriteBatch.End();
+
         base.Draw(gameTime);
     }
 
     private void MouseMove(int deltaX, int deltaY) {
         // Update yaw and pitch based on mouse movement
-        callbacks++;
         world.cameraR -= deltaX * 0.0005f;
         world.cameraT -= deltaY * 0.0005f;
     }

@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using System.Net.WebSockets;
+using System.Diagnostics.SymbolStore;
+using System.Security.Cryptography;
 
 namespace csgame {
 
@@ -36,6 +38,7 @@ namespace csgame {
     class World {
 
         private List<Block> blocks = new List<Block>();
+        private bool regenMap = false;
 
         public Vector3 lastRay;
 
@@ -57,10 +60,24 @@ namespace csgame {
             cameraPosition = new Vector3(0, 0, 0);
             cameraR = 0;
             cameraT = 0;
+
+            float size = 100f;
             for (int i = 0; i < 10000; i++) {
-                blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * 100f, (rnd.NextSingle() - 0.5f) * 100f, -((rnd.NextSingle()) * 100f)), new Vector3(1f, 1f, 1f), "grass"));
+                int num = rnd.Next(3);
+                if (num == 0) {
+                    blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "grass"));
+                } else if(num == 1){
+                    blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "dirt"));
+                } else if (num == 2) {
+                    blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "stone"));
+                }
             }
             GenerateMap();
+        }
+
+        public void AddBlock(Vector3 pos, Vector3 size, string tex) {
+            blocks.Add(new Block(pos, size, tex));
+            regenMap = true;
         }
 
         public void GenerateMap() {
@@ -122,9 +139,9 @@ namespace csgame {
                 positions.Add(new Vector3(X - 0.5f, Y - 0.5f, Z - 0.5f));
                 positions.Add(new Vector3(X - 0.5f, Y + 0.5f, Z - 0.5f));
                 normals.Add(new Vector3(-1, 0, 0));
-                UVs.Add(new Vector2(HX, HY));
-                UVs.Add(new Vector2(LX, HY));
                 UVs.Add(new Vector2(LX, LY));
+                UVs.Add(new Vector2(LX, HY));
+                UVs.Add(new Vector2(HX, HY));
                 UVs.Add(new Vector2(HX, LY));
 
                 listIndices.AddRange(new int[] { 2 + totalIndices, 3 + totalIndices, 0 + totalIndices, 2 + totalIndices, 0 + totalIndices, 1 + totalIndices });
@@ -138,9 +155,9 @@ namespace csgame {
                 positions.Add(new Vector3(X + 0.5f, Y - 0.5f, Z + 0.5f));
                 positions.Add(new Vector3(X + 0.5f, Y + 0.5f, Z + 0.5f));
                 normals.Add(new Vector3(1, 0, 0));
-                UVs.Add(new Vector2(HX, HY));
-                UVs.Add(new Vector2(LX, HY));
                 UVs.Add(new Vector2(LX, LY));
+                UVs.Add(new Vector2(LX, HY));
+                UVs.Add(new Vector2(HX, HY));
                 UVs.Add(new Vector2(HX, LY));
 
                 listIndices.AddRange(new int[] { 0 + totalIndices, 1 + totalIndices, 2 + totalIndices, 0 + totalIndices, 2 + totalIndices, 3 + totalIndices });
@@ -194,8 +211,68 @@ namespace csgame {
             Debug.WriteLine($"{sw.ElapsedMilliseconds}ms > GenerateMap()");
         }
 
+        /// <summary>
+        /// Raycasts from the camera position forwards onto a specified plane
+        /// </summary>
+        /// <param name="c1">One corner of the plane</param>
+        /// <param name="c2">Opposite corner of the plane</param>
+        /// <returns>true/false if the ray hit, position is stored in lastRay property</returns>
+        public bool RaycastPlane(Vector3 c1, Vector3 c2, Vector3 c3, Vector3 c4) {
+            return RaycastPlane(c1, c2, c3, c4, cameraPosition, cameraR, cameraT);
+        }
+
+        /// <summary>
+        /// Raycasts from a position onto a specified plane
+        /// </summary>
+        /// <param name="c1">One corner of the plane</param>
+        /// <param name="c2">Opposite corner of the plane</param>
+        /// <param name="O">Origin position</param>
+        /// <param name="R">Yaw rotation (around Y axis, in radians)</param>
+        /// <param name="T">Tilt rotation (around X axis, in radians)</param>
+        /// <returns>true/false if the ray hit, position is stored in lastRay property</returns>
+        public bool RaycastPlane(Vector3 c1, Vector3 c2, Vector3 c3, Vector3 c4, Vector3 O, float R, float T) {
+            Vector3 D = new Vector3(
+                (float)(Math.Cos(T) * Math.Sin(R)),
+                (float)(Math.Sin(T)),
+                (float)(Math.Cos(T) * Math.Cos(R))
+            );
+            D.Normalize();
+            return RaycastPlane(c1, c2, c3, c4, O, D);
+        }
+
+        /// <summary>
+        /// Raycasts from a position onto a specified plane
+        /// </summary>
+        /// <param name="c1">One corner of the plane</param>
+        /// <param name="c2">Opposite corner of the plane</param>
+        /// <param name="O">Origin position</param>
+        /// <param name="D">Direction vector (in radians)</param>
+        /// <returns>true/false if the ray hit, position is stored in lastRay property</returns>
+        public bool RaycastPlane(Vector3 c1, Vector3 c2, Vector3 c3, Vector3 c4, Vector3 O, Vector3 D) {
+
+            // Triangle 1
+            float? r1 = RayIntersectsTriangle(O, D, c1, c2, c3, out Vector3 hit1);
+            if (r1 != null) {
+                lastRay = hit1;
+                return true;
+            }
+
+            // Triangle 2
+            float? r2 = RayIntersectsTriangle(O, D, c1, c3, c4, out Vector3 hit2);
+            if (r2 != null) {
+                lastRay = hit2;
+                return true;
+            }
+
+            return false;
+        }
+
         public bool Raycast() {
-            return Raycast(cameraPosition, cameraR, cameraT);
+            Stopwatch sw = Stopwatch.StartNew();
+            bool temp = Raycast(cameraPosition, cameraR, cameraT);
+            sw.Stop();
+            Debug.WriteLine($"{sw.ElapsedMilliseconds}ms");
+            return temp;
         }
 
         public bool Raycast(Vector3 O, float R, float T) {
@@ -277,6 +354,11 @@ namespace csgame {
 
 
         public void render() {
+
+            if (regenMap)
+                GenerateMap();
+
+            regenMap = false;
 
             ResourceManager.GraphicsDevice.Clear(Color.SkyBlue);
 

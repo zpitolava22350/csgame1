@@ -31,13 +31,13 @@ namespace csgame
                     cHX = 0.1f;
                     cHY = 0.1f;
                     break;
-                case "stone":
+                case "dirt":
                     cLX = 0.1f;
                     cLY = 0.0f;
                     cHX = 0.2f;
                     cHY = 0.1f;
                     break;
-                case "idk":
+                case "stone":
                     cLX = 0.2f;
                     cLY = 0.0f;
                     cHX = 0.3f;

@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -21,6 +22,8 @@ public class Game1: Game {
     bool bruh = false;
     bool click = false;
 
+    private Dictionary<Keys, int> keyStates;
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int MessageBox(IntPtr hWnd, string lpText, string lpCaption, uint uType);
 
@@ -30,6 +33,11 @@ public class Game1: Game {
         IsMouseVisible = false;
         TargetElapsedTime = TimeSpan.FromSeconds(1.0 / 360.0);
         IsFixedTimeStep = true;
+
+        keyStates = new Dictionary<Keys, int>();
+        foreach(Keys key in Enum.GetValues(typeof(Keys))) {
+            keyStates[key] = 0;
+        }
 
         _graphics.IsFullScreen = false;
 
@@ -73,11 +81,24 @@ public class Game1: Game {
 
         // Get the current mouse state
         var mouseState = Mouse.GetState();
+        
+        // Get keyboard state
+        var kstate = Keyboard.GetState();
+
+        foreach (Keys key in Enum.GetValues(typeof(Keys))) {
+            if (kstate.IsKeyDown(key)) {
+                keyStates[key] += 1;
+            } else {
+                keyStates[key] = 0;
+            }
+        }
+
+        if (keyStates[Keys.C] == 1) {
+            world.AddBlock(world.cameraPosition, new Vector3(1, 1, 1), "grass");
+        }
 
         if (mouseState.LeftButton == ButtonState.Pressed && !click) {
-            bool buh = world.Raycast();
-            if(buh)
-                world.cameraPosition = Vector3.Lerp(world.cameraPosition, world.lastRay, 0.05f);
+            world.GenerateMap();
             click = true;
         } else if(mouseState.LeftButton == ButtonState.Released && click) {
             click = false;
@@ -91,9 +112,6 @@ public class Game1: Game {
 
         // Clamp the pitch to prevent flipping
         world.cameraT = MathHelper.Clamp(world.cameraT, -MathHelper.PiOver2, MathHelper.PiOver2);
-
-        // Get keyboard state
-        var kstate = Keyboard.GetState();
 
         // Move player
         if (kstate.IsKeyDown(Keys.W)) {

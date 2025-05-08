@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Xna.Framework;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.Xna.Framework;
 
-namespace csgame
-{
-    class Block
-    {
+namespace csgame {
+    class Block {
 
         public Vector3 position { get; private set; }
         public Vector3 size { get; private set; }

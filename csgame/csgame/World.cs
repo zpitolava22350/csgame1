@@ -1,15 +1,8 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
-using Microsoft.Xna.Framework;
-using System.Net.WebSockets;
-using System.Diagnostics.SymbolStore;
-using System.Security.Cryptography;
 
 namespace csgame {
 
@@ -37,10 +30,11 @@ namespace csgame {
 
     class World {
 
-        private List<Block> blocks = new List<Block>();
-        private bool regenMap = false;
+        public List<Block> blocks = new List<Block>();
+        public bool regenMap = false;
 
-        public Vector3 lastRay;
+        public Vector3 lastRayPos;
+        public int lastRayIndex;
 
         VertexCustom[] vertices;
         int[] indices;
@@ -66,7 +60,7 @@ namespace csgame {
                 int num = rnd.Next(3);
                 if (num == 0) {
                     blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "grass"));
-                } else if(num == 1){
+                } else if (num == 1) {
                     blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "dirt"));
                 } else if (num == 2) {
                     blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "stone"));
@@ -253,14 +247,14 @@ namespace csgame {
             // Triangle 1
             float? r1 = RayIntersectsTriangle(O, D, c1, c2, c3, out Vector3 hit1);
             if (r1 != null) {
-                lastRay = hit1;
+                lastRayPos = hit1;
                 return true;
             }
 
             // Triangle 2
             float? r2 = RayIntersectsTriangle(O, D, c1, c3, c4, out Vector3 hit2);
             if (r2 != null) {
-                lastRay = hit2;
+                lastRayPos = hit2;
                 return true;
             }
 
@@ -299,7 +293,8 @@ namespace csgame {
                     out Vector3 hit1);
                 if (r1 != null) {
                     if (r1 < closest) {
-                        lastRay = hit1;
+                        lastRayPos = hit1;
+                        lastRayIndex = i / 6;
                         closest = (float)r1;
                     }
                 }
@@ -311,14 +306,15 @@ namespace csgame {
                     vertices[indices[i + 5]].Position,
                     out Vector3 hit2);
                 if (r2 != null) {
-                    if(r2 < closest) {
-                        lastRay = hit2;
+                    if (r2 < closest) {
+                        lastRayPos = hit2;
+                        lastRayIndex = i / 6;
                         closest = (float)r2;
                     }
                 }
             }
 
-            if(closest < float.MaxValue) {
+            if (closest < float.MaxValue) {
                 return true;
             }
             return false;

@@ -3,13 +3,10 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using BlockProperties;
 
 namespace csgame;
-
-
 
 public class Game1: Game {
     private GraphicsDeviceManager _graphics;
@@ -35,7 +32,7 @@ public class Game1: Game {
         IsFixedTimeStep = true;
 
         keyStates = new Dictionary<Keys, int>();
-        foreach(Keys key in Enum.GetValues(typeof(Keys))) {
+        foreach (Keys key in Enum.GetValues(typeof(Keys))) {
             keyStates[key] = 0;
         }
 
@@ -50,7 +47,7 @@ public class Game1: Game {
 
     protected override void Initialize() {
         base.Initialize();
-        ResourceManager.GraphicsDevice = GraphicsDevice;
+        ResourceManager.GraphicsDevice = _graphics.GraphicsDevice;
 
         RawMouseInputReader.SetCallback(MouseMove);
     }
@@ -81,7 +78,7 @@ public class Game1: Game {
 
         // Get the current mouse state
         var mouseState = Mouse.GetState();
-        
+
         // Get keyboard state
         var kstate = Keyboard.GetState();
 
@@ -97,10 +94,18 @@ public class Game1: Game {
             world.AddBlock(world.cameraPosition, new Vector3(1, 1, 1), "grass");
         }
 
+        if (keyStates[Keys.V] == 1) {
+            IsMouseVisible = true;
+            System.Windows.Forms.Form pw = new PropertiesWindow();
+            if(pw.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+
+            }
+        }
+
         if (mouseState.LeftButton == ButtonState.Pressed && !click) {
             world.GenerateMap();
             click = true;
-        } else if(mouseState.LeftButton == ButtonState.Released && click) {
+        } else if (mouseState.LeftButton == ButtonState.Released && click) {
             click = false;
         }
 

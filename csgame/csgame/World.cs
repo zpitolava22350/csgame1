@@ -36,6 +36,8 @@ namespace csgame {
         public Vector3 lastRayPos;
         public int lastRayIndex;
 
+        public int selectedBlock;
+
         VertexCustom[] vertices;
         int[] indices;
         int primitivecount;
@@ -54,6 +56,7 @@ namespace csgame {
             cameraPosition = new Vector3(0, 0, 0);
             cameraR = 0;
             cameraT = 0;
+            selectedBlock = -1;
 
             float size = 100f;
             for (int i = 0; i < 10000; i++) {
@@ -294,7 +297,7 @@ namespace csgame {
                 if (r1 != null) {
                     if (r1 < closest) {
                         lastRayPos = hit1;
-                        lastRayIndex = i / 6;
+                        lastRayIndex = i / 36;
                         closest = (float)r1;
                     }
                 }
@@ -308,7 +311,7 @@ namespace csgame {
                 if (r2 != null) {
                     if (r2 < closest) {
                         lastRayPos = hit2;
-                        lastRayIndex = i / 6;
+                        lastRayIndex = i / 36;
                         closest = (float)r2;
                     }
                 }

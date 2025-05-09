@@ -3,7 +3,7 @@
 namespace csgame {
     class Block {
 
-        public Vector3 position { get; private set; }
+        public Vector3 position { get; set; }
         public Vector3 size { get; private set; }
 
         public string tex { get; private set; }

@@ -33,6 +33,7 @@
             this.pbx_Texture.Location = new System.Drawing.Point(12, 12);
             this.pbx_Texture.Name = "pbx_Texture";
             this.pbx_Texture.Size = new System.Drawing.Size(192, 192);
+            this.pbx_Texture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pbx_Texture.TabIndex = 0;
             this.pbx_Texture.TabStop = false;
             // 
@@ -54,6 +55,7 @@
             this.Controls.Add(this.pbx_Texture);
             this.Name = "PropertiesWindow";
             this.Text = "Form1";
+            this.Load += new System.EventHandler(this.PropertiesWindow_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pbx_Texture)).EndInit();
             this.ResumeLayout(false);
 

@@ -32,7 +32,6 @@
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BlockProperties\BlockProperties.csproj" />
 	<PackageReference Include="System.Windows.Forms" />
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">

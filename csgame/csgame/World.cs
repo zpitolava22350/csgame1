@@ -58,15 +58,15 @@ namespace csgame {
             cameraT = 0;
             selectedBlock = -1;
 
-            float size = 100f;
-            for (int i = 0; i < 10000; i++) {
+            float size = 50f;
+            for (int i = 0; i < 1000; i++) {
                 int num = rnd.Next(3);
                 if (num == 0) {
-                    blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "grass"));
+                    blocks.Add(new Block(Vector3.Round(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size))), new Vector3(1f, 1f, 1f), "grass"));
                 } else if (num == 1) {
-                    blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "dirt"));
+                    blocks.Add(new Block(Vector3.Round(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size))), new Vector3(1f, 1f, 1f), "dirt"));
                 } else if (num == 2) {
-                    blocks.Add(new Block(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size)), new Vector3(1f, 1f, 1f), "stone"));
+                    blocks.Add(new Block(Vector3.Round(new Vector3((rnd.NextSingle() - 0.5f) * size, (rnd.NextSingle() - 0.5f) * size, -((rnd.NextSingle()) * size))), new Vector3(1f, 1f, 1f), "stone"));
                 }
             }
             GenerateMap();

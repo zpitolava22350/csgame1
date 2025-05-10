@@ -94,7 +94,7 @@ namespace csgame {
                 new RAWINPUTDEVICE {
                     UsagePage = 0x01,   // Generic desktop
                     Usage     = 0x02,   // Mouse
-                    Flags     = RawInputDeviceFlags.NoLegacy,
+                    Flags     = RawInputDeviceFlags.None, // None allows the window to be interacted with still
                     Target    = hWnd
                 }
             };

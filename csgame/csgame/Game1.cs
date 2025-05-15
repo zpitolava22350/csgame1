@@ -92,8 +92,13 @@ public class Game1: Game {
         ResourceManager.GraphicsDevice = _graphics.GraphicsDevice;
 
         // Create Pause menu buttons
-        PauseButtons.Add(new Button(new Vector2(-350, -250), new Vector2(200, 100), new Color(200, 200, 200), () => {
+        // Exit
+        PauseButtons.Add(new Button("Exit", 0.4f, new Vector2(250, 150), new Vector2(100, 100), new Color(230, 150, 150), () => {
             Exit();
+        }));
+
+        PauseButtons.Add(new Button("Some button", 0.3f, new Vector2(-350, -250), new Vector2(150, 100), new Color(200, 200, 200), () => {
+            Debug.WriteLine("bad");
         }));
 
         RawMouseInputReader.SetMoveCallback(MouseMove);
@@ -102,16 +107,27 @@ public class Game1: Game {
 
     protected override void LoadContent() {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-        font = Content.Load<SpriteFont>("BruhFont");
-        world.lighting = Content.Load<Effect>("Lighting");
 
+        // Load Font
+        font = Content.Load<SpriteFont>("BruhFont");
+
+        // Make White pixel for rendering UI
         pixel = new Texture2D(GraphicsDevice, 1, 1);
         pixel.SetData(new[] { Color.White });
 
+        // Init world FOV
         world.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(1.57f, GraphicsDevice.Viewport.AspectRatio, 0.1f, 1000f);
+
+        // Load Texture atlas
         world.texture = Content.Load<Texture2D>("texsheet");
         world.texture.GraphicsDevice.SamplerStates[0] = new SamplerState { Filter = TextureFilter.Point, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap };
-        world.lighting.Parameters[$"Texture"].SetValue(world.texture);
+
+        // Load BasicLighting
+        world.BasicLighting = Content.Load<Effect>("Lighting");
+        world.BasicLighting.Parameters[$"Texture"].SetValue(world.texture);
+
+        // Load ColorLighting
+        world.ColorLighting = Content.Load<Effect>("ColorLighting");
     }
 
     protected override void Update(GameTime gameTime) {
@@ -285,20 +301,30 @@ public class Game1: Game {
         world.render();
 
         // HUD
-        _spriteBatch.Begin();
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
         // Crosshair
         Point screenCenter = new Point(ResourceManager.GraphicsDevice.Viewport.Width / 2, ResourceManager.GraphicsDevice.Viewport.Height / 2);
 
         if (!paused) {
+            // Crosshair
             _spriteBatch.Draw(pixel, new Rectangle(screenCenter.X - 10, screenCenter.Y - 1, 20, 2), Color.White);
             _spriteBatch.Draw(pixel, new Rectangle(screenCenter.X - 1, screenCenter.Y - 10, 2, 20), Color.White);
+            // Menu bottom left
             _spriteBatch.Draw(pixel, new Rectangle(50, height - 450, 600, 400), Color.FromNonPremultiplied(80, 80, 80, 220));
+
+            _spriteBatch.Draw(pixel, new Rectangle(73, height - 427, 132, 132), new Color(160,160,160));
+            _spriteBatch.Draw(world.texture, new Rectangle(75, height - 425, 128, 128), new Rectangle(0, 0, 16, 16), new Color(255, 255, 255));
         } else {
+            // Screen darken
             _spriteBatch.Draw(pixel, new Rectangle(0, 0, width, height), Color.FromNonPremultiplied(10, 10, 10, 200));
+            // Menu box
             _spriteBatch.Draw(pixel, new Rectangle(screenCenter.X - 400, screenCenter.Y - 300, 800, 600), Color.FromNonPremultiplied(100, 100, 100, 255));
+            // Buttons
             foreach (Button b in PauseButtons) {
                 _spriteBatch.Draw(pixel, new Rectangle((int)b.Position.X + screenCenter.X, (int)b.Position.Y + screenCenter.Y, (int)b.Size.X, (int)b.Size.Y), b.Color);
+                Vector2 textSize = font.MeasureString(b.Text) * b.Scale;
+                _spriteBatch.DrawString(font, b.Text, new Vector2((int)b.Position.X + screenCenter.X + (b.Size.X / 2f) - (textSize.X / 2f), b.Position.Y + screenCenter.Y + (b.Size.Y / 2f) - (textSize.Y / 2f)), new Color(0, 0, 0), 0f, new Vector2(0, 0), b.Scale, SpriteEffects.None, 0f);
                 if (mouseStates[Click.Left] == 1) {
                     b.CheckClick(mouseStates[Click.X] - screenCenter.X, mouseStates[Click.Y] - screenCenter.Y);
                 }
@@ -306,8 +332,8 @@ public class Game1: Game {
         }
 
         // FPS
-        _spriteBatch.DrawString(font, "FPS: " + (1 / (float)gameTime.ElapsedGameTime.TotalSeconds).ToString("0.0"), new Vector2(10, 10), Color.White);
-        _spriteBatch.DrawString(font, "Avg FPS: " + avgFPS.ToString("0.0"), new Vector2(10, 30), Color.White);
+        _spriteBatch.DrawString(font, "FPS: " + (1 / (float)gameTime.ElapsedGameTime.TotalSeconds).ToString("0.0"), new Vector2(10, 10), Color.White, 0f, new Vector2(0, 0), 0.25f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(font, "Avg FPS: " + avgFPS.ToString("0.0"), new Vector2(10, 32), Color.White, 0f, new Vector2(0, 0), 0.25f, SpriteEffects.None, 0f);
 
         _spriteBatch.End();
 

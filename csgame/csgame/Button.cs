@@ -6,17 +6,21 @@ namespace csgame {
         public Vector2 Position { get; private set; }
         public Vector2 Size { get; private set; }
         public Color Color { get; private set; }
+        public string Text { get; private set; }
+        public float Scale { get; private set; }
         
         public delegate void onclick();
         public onclick OnClick { get; set; }
 
-        public Button(Vector2 pos, Vector2 size, Color color) {
+        public Button(string text, float textScale, Vector2 pos, Vector2 size, Color color) {
             Position = pos;
             Size = size;
             Color = color;
+            Text = text;
+            Scale = textScale;
         }
 
-        public Button(Vector2 pos, Vector2 size, Color color, onclick clk) : this(pos, size, color) {
+        public Button(string text, float textScale, Vector2 pos, Vector2 size, Color color, onclick clk) : this(text, textScale, pos, size, color) {
             OnClick = clk;
         }
 

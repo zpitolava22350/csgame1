@@ -20,6 +20,12 @@
 /processorParam:TextureFormat=Compressed
 /build:BruhFont.spritefont
 
+#begin ColorLighting.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:ColorLighting.fx
+
 #begin Lighting.fx
 /importer:EffectImporter
 /processor:EffectProcessor

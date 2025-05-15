@@ -28,6 +28,21 @@ namespace csgame {
         );
     }
 
+    public struct VertexColor {
+        public Vector3 Position;
+        public Vector4 Color;
+
+        public VertexColor(Vector3 position, Vector4 color) {
+            Position = position;
+            Color = color;
+        }
+
+        public static readonly VertexDeclaration VertexDeclaration = new VertexDeclaration(
+            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+            new VertexElement(sizeof(float) * 3, VertexElementFormat.Vector4, VertexElementUsage.Color, 0)
+        );
+    }
+
     class World {
 
         public List<Block> blocks = new List<Block>();
@@ -42,7 +57,8 @@ namespace csgame {
         int[] indices;
         int primitivecount;
 
-        public Effect lighting { get; set; }
+        public Effect BasicLighting { get; set; }
+        public Effect ColorLighting { get; set; }
         private static Random rnd = new Random();
         public Texture2D texture { get; set; }
         public Matrix projectionMatrix { get; set; }
@@ -359,18 +375,30 @@ namespace csgame {
 
             regenMap = false;
 
+            // Make selected block glow
+            VertexColor[] selectVertices;
+            int[] selectIndices;
+            bool renderSelectedBlock = MakeSelectOutline(out selectIndices, out selectVertices);
+
             ResourceManager.GraphicsDevice.Clear(Color.SkyBlue);
 
+            // Create Matrices
             Matrix rotationMatrix = Matrix.CreateFromYawPitchRoll(cameraR, cameraT, 0);
             Vector3 lookDirection = Vector3.Transform(Vector3.Forward, rotationMatrix);
             Vector3 upDirection = Vector3.Transform(Vector3.Up, rotationMatrix);
             Matrix viewMatrix = Matrix.CreateLookAt(cameraPosition, cameraPosition + lookDirection, upDirection);
 
-            lighting.Parameters["World"].SetValue(Matrix.CreateTranslation(0, 0, 0));
-            lighting.Parameters["playerPos"].SetValue(cameraPosition);
+            // Set BasicLighting Settings
+            BasicLighting.Parameters["World"].SetValue(Matrix.CreateTranslation(0, 0, 0));
+            BasicLighting.Parameters["playerPos"].SetValue(cameraPosition);
+            BasicLighting.Parameters["View"].SetValue(viewMatrix);
+            BasicLighting.Parameters["Projection"].SetValue(projectionMatrix);
 
-            lighting.Parameters["View"].SetValue(viewMatrix);
-            lighting.Parameters["Projection"].SetValue(projectionMatrix);
+            // Set ColorLighting Settings
+            ColorLighting.Parameters["World"].SetValue(Matrix.CreateTranslation(0, 0, 0));
+            ColorLighting.Parameters["playerPos"].SetValue(cameraPosition);
+            ColorLighting.Parameters["View"].SetValue(viewMatrix);
+            ColorLighting.Parameters["Projection"].SetValue(projectionMatrix);
 
             ResourceManager.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             ResourceManager.GraphicsDevice.BlendState = BlendState.Opaque;
@@ -380,15 +408,103 @@ namespace csgame {
 
             ResourceManager.GraphicsDevice.SamplerStates[0] = new SamplerState { Filter = TextureFilter.Point, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap };
 
-            foreach (var pass in lighting.CurrentTechnique.Passes) {
+            foreach (var pass in BasicLighting.CurrentTechnique.Passes) {
                 pass.Apply();
                 ResourceManager.GraphicsDevice.DrawUserIndexedPrimitives(PrimitiveType.TriangleList, vertices, 0, vertices.Length, indices, 0, (indices.Length) / 3, VertexCustom.VertexDeclaration);
             }
 
-            ResourceManager.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-            ResourceManager.GraphicsDevice.DepthStencilState = DepthStencilState.None;
-            ResourceManager.GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+            if (renderSelectedBlock) {
+                ResourceManager.GraphicsDevice.BlendState = BlendState.AlphaBlend;
+                foreach (var pass in ColorLighting.CurrentTechnique.Passes) {
+                    pass.Apply();
+                    ResourceManager.GraphicsDevice.DrawUserIndexedPrimitives(PrimitiveType.TriangleList, selectVertices, 0, selectVertices.Length, selectIndices, 0, (selectIndices.Length) / 3, VertexColor.VertexDeclaration);
+                }
+            }
 
+        }
+
+        private bool MakeSelectOutline(out int[] selectIndices, out VertexColor[] selectVertices) {
+
+            selectIndices = null;
+            selectVertices = null;
+
+            if(selectedBlock == -1) {
+                return false;
+            }
+
+            List<Vector3> positions = new List<Vector3>();
+            List<Vector3> normals = new List<Vector3>();
+            List<Vector2> UVs = new List<Vector2>();
+            List<int> listIndices = new List<int>();
+            int totalIndices = 0;
+
+            float X = blocks[selectedBlock].position.X;
+            float Y = blocks[selectedBlock].position.Y;
+            float Z = blocks[selectedBlock].position.Z;
+
+            float LX = blocks[selectedBlock].cLX;
+            float LY = blocks[selectedBlock].cLY;
+            float HX = blocks[selectedBlock].cHX;
+            float HY = blocks[selectedBlock].cHY;
+
+            float selectSize = 0.502f;
+
+            // Back (z-)
+            positions.Add(new Vector3(X - selectSize, Y - selectSize, Z - selectSize));
+            positions.Add(new Vector3(X - selectSize, Y + selectSize, Z - selectSize));
+            positions.Add(new Vector3(X + selectSize, Y + selectSize, Z - selectSize));
+            positions.Add(new Vector3(X + selectSize, Y - selectSize, Z - selectSize));
+            listIndices.AddRange(new int[] { 0 + totalIndices, 2 + totalIndices, 1 + totalIndices, 0 + totalIndices, 3 + totalIndices, 2 + totalIndices });
+            totalIndices += 4;
+
+            // Front (z+)
+            positions.Add(new Vector3(X - selectSize, Y - selectSize, Z + selectSize));
+            positions.Add(new Vector3(X - selectSize, Y + selectSize, Z + selectSize));
+            positions.Add(new Vector3(X + selectSize, Y + selectSize, Z + selectSize));
+            positions.Add(new Vector3(X + selectSize, Y - selectSize, Z + selectSize));
+            listIndices.AddRange(new int[] { 0 + totalIndices, 1 + totalIndices, 2 + totalIndices, 0 + totalIndices, 2 + totalIndices, 3 + totalIndices });
+            totalIndices += 4;
+
+            // Left (x-)
+            positions.Add(new Vector3(X - selectSize, Y + selectSize, Z + selectSize));
+            positions.Add(new Vector3(X - selectSize, Y - selectSize, Z + selectSize));
+            positions.Add(new Vector3(X - selectSize, Y - selectSize, Z - selectSize));
+            positions.Add(new Vector3(X - selectSize, Y + selectSize, Z - selectSize));
+            listIndices.AddRange(new int[] { 2 + totalIndices, 3 + totalIndices, 0 + totalIndices, 2 + totalIndices, 0 + totalIndices, 1 + totalIndices });
+            totalIndices += 4;
+
+            // Right (x+)
+            positions.Add(new Vector3(X + selectSize, Y + selectSize, Z - selectSize));
+            positions.Add(new Vector3(X + selectSize, Y - selectSize, Z - selectSize));
+            positions.Add(new Vector3(X + selectSize, Y - selectSize, Z + selectSize));
+            positions.Add(new Vector3(X + selectSize, Y + selectSize, Z + selectSize));
+            listIndices.AddRange(new int[] { 0 + totalIndices, 1 + totalIndices, 2 + totalIndices, 0 + totalIndices, 2 + totalIndices, 3 + totalIndices });
+            totalIndices += 4;
+
+            // Bottom (y-)
+            positions.Add(new Vector3(X - selectSize, Y - selectSize, Z - selectSize));
+            positions.Add(new Vector3(X - selectSize, Y - selectSize, Z + selectSize));
+            positions.Add(new Vector3(X + selectSize, Y - selectSize, Z + selectSize));
+            positions.Add(new Vector3(X + selectSize, Y - selectSize, Z - selectSize));
+            listIndices.AddRange(new int[] { 1 + totalIndices, 2 + totalIndices, 3 + totalIndices, 1 + totalIndices, 3 + totalIndices, 0 + totalIndices });
+            totalIndices += 4;
+
+            // Top (y+)
+            positions.Add(new Vector3(X - selectSize, Y + selectSize, Z + selectSize));
+            positions.Add(new Vector3(X - selectSize, Y + selectSize, Z - selectSize));
+            positions.Add(new Vector3(X + selectSize, Y + selectSize, Z - selectSize));
+            positions.Add(new Vector3(X + selectSize, Y + selectSize, Z + selectSize));
+            listIndices.AddRange(new int[] { 0 + totalIndices, 2 + totalIndices, 3 + totalIndices, 0 + totalIndices, 1 + totalIndices, 2 + totalIndices });
+            totalIndices += 4;
+
+            // Other slop
+            selectVertices = new VertexColor[positions.Count];
+            selectIndices = listIndices.ToArray();
+            for (int i = 0; i < positions.Count; i++) {
+                selectVertices[i] = new VertexColor(new Vector3(positions[i].X, positions[i].Y, positions[i].Z), new Vector4(1f, 1f, 1f, 0.2f));
+            }
+
+            return true;
         }
 
     }
